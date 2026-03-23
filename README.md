@@ -59,5 +59,6 @@ Chiunque apra quell'indirizzo può usare l'app **senza inserire nessuna chiave**
   - Con €5 di credito → circa 2.500 analisi
 
 ## Aggiornare l'app
-Per modificare l'app in futuro: modifica i file su GitHub,
+Per modificare l'app in futuro: modifica i file su GitHub
 Vercel si aggiorna automaticamente in pochi secondi.
+
