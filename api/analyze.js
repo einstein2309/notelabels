@@ -52,7 +52,7 @@ export default async function handler(req, res) {
           contents: [{
             parts: [
               { text: prompt },
-              { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } }
+              { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
             ]
           }]
         }),
