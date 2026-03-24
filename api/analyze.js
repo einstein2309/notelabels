@@ -4,7 +4,19 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { provider = 'gemini', imageBase64, prompt } = req.body;
+  const { provider = 'gemini', imageBase64, prompt, mimeType = 'image/jpeg' } = req.body;
+  
+  // Debug: logga cosa riceviamo
+  console.log('Provider:', provider);
+  console.log('Image length:', imageBase64 ? imageBase64.length : 0);
+  console.log('MimeType:', mimeType);
+  
+  if (!imageBase64) {
+    return res.status(400).json({ error: 'No image provided' });
+  }
+
+  // Rimuovi il prefisso data:image/... se presente
+  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
   
   try {
     if (provider === 'claude') {
@@ -27,7 +39,14 @@ export default async function handler(req, res) {
           messages: [{
             role: 'user',
             content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
+              { 
+                type: 'image', 
+                source: { 
+                  type: 'base64', 
+                  media_type: mimeType, 
+                  data: cleanBase64 
+                } 
+              },
               { type: 'text', text: prompt }
             ]
           }]
@@ -42,28 +61,44 @@ export default async function handler(req, res) {
       // Usa Gemini (Google) - default
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ error: 'Gemini API key not configured. Get one at ai.google.dev' });
+        return res.status(500).json({ error: 'Gemini API key not configured' });
       }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      // Formato corretto per Gemini API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
             parts: [
               { text: prompt },
-              { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
+              { 
+                inline_data: { 
+                  mime_type: mimeType, 
+                  data: cleanBase64 
+                } 
+              }
             ]
           }]
         }),
       });
 
       const data = await response.json();
-      if (!response.ok) return res.status(response.status).json(data);
+      console.log('Gemini response:', JSON.stringify(data).substring(0, 200));
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ error: data.error?.message || 'Gemini API error', details: data });
+      }
+      
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        return res.status(500).json({ error: 'Invalid Gemini response', details: data });
+      }
+      
       return res.status(200).json({ result: data.candidates[0].content.parts[0].text });
     }
 
   } catch (err) {
+    console.error('Error:', err);
     return res.status(500).json({ error: err.message });
   }
 }
