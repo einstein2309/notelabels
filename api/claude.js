@@ -1,7 +1,3 @@
-// api/claude.js
-// Server-side proxy: the API key lives here as an env variable,
-// never exposed to the browser.
-
 export default async function handler(req, res) {
   // Only POST allowed
   if (req.method !== 'POST') {
@@ -18,8 +14,8 @@ export default async function handler(req, res) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Content-Type':    'application/json',
-        'x-api-key':       apiKey,
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(req.body),
