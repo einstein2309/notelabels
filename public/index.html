@@ -342,17 +342,15 @@ function drawRaw(img){
 // ── API call → /api/claude (server proxy, no key in browser) ──
 function apiCall(b64,mtype,prompt,maxTok){
   plog('→ /api/claude ('+maxTok+' tok)…');
-  return fetch('/api/claude',{
+  return fetch('/api/analyze',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
-      max_tokens:maxTok||2000,
-      messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:mtype,data:b64}},
-        {type:'text',text:prompt}
-      ]}]
-    })
+   body:JSON.stringify({
+  provider: 'gemini',
+  imageBase64: b64,
+  mimeType: mtype,
+  prompt: prompt
+})
   }).then(function(r){
     if(!r.ok)return r.json().catch(function(){return{};}).then(function(j){
       throw new Error('Errore server '+r.status+': '+(j.error&&j.error.message?j.error.message:r.statusText));
