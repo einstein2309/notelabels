@@ -130,7 +130,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;heigh
     <span class="sub">Pro · AI Autonomo</span>
   </div>
   <div class="hdr-r">
-    <span class="badge badge-gold">⚡ Claude AI</span>
+    <span class="badge badge-gold">⚡ Gemini AI</span>
     <span class="badge badge-vi">👁 Vision OMR</span>
     <div class="lang-tog">
       <button id="bEN" class="act" onclick="setLang('EN')">C D E</button>
@@ -156,7 +156,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;heigh
   <div class="sec">
     <div class="sec-t">Chiave Musicale</div>
     <div class="cl-grid">
-      <div class="cl-opt act" data-c="auto"   onclick="pickClef(this)"><span class="cl-sym">🤖</span><span class="cl-nm">Auto AI</span><span class="cl-d">Claude rileva</span></div>
+      <div class="cl-opt act" data-c="auto"   onclick="pickClef(this)"><span class="cl-sym">🤖</span><span class="cl-nm">Auto AI</span><span class="cl-d">AI rileva</span></div>
       <div class="cl-opt"     data-c="treble" onclick="pickClef(this)"><span class="cl-sym">𝄞</span><span class="cl-nm">Violino</span><span class="cl-d">Label sopra</span></div>
       <div class="cl-opt"     data-c="bass"   onclick="pickClef(this)"><span class="cl-sym">𝄢</span><span class="cl-nm">Basso</span><span class="cl-d">Label sotto</span></div>
       <div class="cl-opt"     data-c="piano"  onclick="pickClef(this)"><span class="cl-sym">🎹</span><span class="cl-nm">Piano</span><span class="cl-d">Coppia</span></div>
@@ -254,7 +254,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;heigh
 
 <div id="mod"><div id="mb">
   <h2>🎼 Analisi OMR</h2>
-  <div class="ms">Claude Vision legge lo spartito…</div>
+  <div class="ms">Gemini Vision legge lo spartito…</div>
   <div class="pt"><div class="pf" id="pf" style="width:0%"></div></div>
   <div id="pp">0%</div><div id="ps">Inizializzazione…</div><div id="pd"></div>
   <div id="plog"></div>
@@ -277,8 +277,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;heigh
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  NoteVision Pro — Vercel version
-//  All API calls go to /api/claude (server-side proxy)
-//  NO API key in the browser — fully autonomous
+//  All API calls go to /api/analyze (server-side proxy)
+//  Supports both Gemini (free) and Claude (paid)
 // ═══════════════════════════════════════════════════════════════
 
 var IT_N={C:'Do',D:'Re',E:'Mi',F:'Fa',G:'Sol',A:'La',B:'Si'};
@@ -339,26 +339,27 @@ function drawRaw(img){
   MC.width=w;MC.height=h;CTX.drawImage(img,0,0,w,h);applyZ();
 }
 
-// ── API call → /api/claude (server proxy, no key in browser) ──
+// ── API call → /api/analyze (server proxy) ──
 function apiCall(b64,mtype,prompt,maxTok){
-  plog('→ /api/claude ('+maxTok+' tok)…');
+  plog('→ /api/analyze ('+maxTok+' tok)…');
   return fetch('/api/analyze',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({
-  provider: 'gemini',
-  imageBase64: b64,
-  mimeType: mtype,
-  prompt: prompt
-})
+    body:JSON.stringify({
+      provider:'gemini',
+      imageBase64:b64,
+      mimeType:mtype,
+      prompt:prompt
+    })
   }).then(function(r){
     if(!r.ok)return r.json().catch(function(){return{};}).then(function(j){
       throw new Error('Errore server '+r.status+': '+(j.error&&j.error.message?j.error.message:r.statusText));
     });
     return r.json();
   }).then(function(d){
-    var txt=(d.content||[]).map(function(b){return b.text||'';}).join('');
-    plog('✓ '+(d.usage&&d.usage.output_tokens?d.usage.output_tokens:'?')+' tok');
+    // Gemini/Claude unified response format
+    var txt = d.result || '';
+    plog('✓ Risposta ricevuta');
     return txt;
   });
 }
@@ -388,7 +389,7 @@ function runAnalysis(){
   showMod();clearLog();
   var t0=Date.now();
 
-  step(5,'Analisi layout spartito…','Claude Vision cerca pentagrammi');
+  step(5,'Analisi layout spartito…','Gemini Vision cerca pentagrammi');
   var orig=toB64(G.img,1200);
 
   apiCall(orig.b64,'image/jpeg',layoutPrompt(orig.w,orig.h),2500)
@@ -401,7 +402,7 @@ function runAnalysis(){
     G.staffs=lay&&lay.staffs&&lay.staffs.length?makeStaffs(lay.staffs,orig.scale):[];
     if(!G.staffs.length){plog('→ geometrico');G.staffs=geoStaffs();}
     if(!G.staffs.length)throw new Error('Nessun pentagramma trovato. Prova con un\'immagine ritagliata sullo spartito.');
-    step(50,'Riconoscimento note…','Claude legge ogni nota');
+    step(50,'Riconoscimento note…','Gemini legge ogni nota');
     var cr=toB64(G.cropped,1200);
     return apiCall(cr.b64,'image/jpeg',notesPrompt(cr.w,cr.h,G.staffs,cr.scale),4000)
     .then(function(txt2){
